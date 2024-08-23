@@ -1,0 +1,83 @@
+:root{
+    --gameboard_size: 22rem;
+    --board_border: solid 1px black;
+}
+html, body{
+    height: 100%;
+    font-family: 'Courier New', Courier, monospace;
+}
+.panel{
+    display: flex;
+    flex-direction: column;
+}
+/********************************* Player bar *********************************/
+.player_bar{
+    display: flex;
+    flex-wrap: nowrap;
+
+    background-color: lightgray;
+    border: solid 1px black; 
+    padding: 1rem;
+    margin: 1rem 0rem 1rem 0rem;
+}
+.message_box{
+    flex-grow: 1;
+    text-align: center;
+}
+.winner{
+    color: green;
+}
+.loser{
+    color: red;
+}
+
+/********************************* Gameboard *********************************/
+#gameboard{
+    background-color: black;
+    aspect-ratio: 1/1;
+
+    display: grid;
+    grid-template-columns: repeat(11, 1fr);
+    grid-template-rows: repeat(11, 1fr);
+
+    border: var(--board_border);
+    border-top: 0px;
+    border-left: 0px;
+}
+.tile{
+    background-color: lightsalmon;
+    border: var(--board_border);
+    border-bottom: 0px;
+    border-right: 0px;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+.tile_objective{
+    background-color: lightcoral;
+}
+.tile_home{
+    background-color: rgb(193, 104, 104);
+}
+/***************************** Pieces *****************************/
+.piece{
+    height: 75%;
+    width: 75%;
+    border: solid 1px black;
+    border-radius: 50%;
+    transition: height 0.1s, width 0.1s;
+}
+.piece:hover{
+    height: 90%;
+    width: 90%;
+}
+.defender{
+    background-color: brown;
+}
+.attacker{
+    background-color:bisque;
+}
+#king{
+    background-color: darkred;
+}

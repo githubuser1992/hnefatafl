@@ -1,0 +1,30 @@
+html, body{
+    height:100%;
+    width: 100%;
+    margin: 0px;
+}
+#main_menu_screen{
+    background-color:lightblue;
+    height: 100%;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+.title{
+    margin:3rem;
+    font-size: 3rem;
+}
+.main_menu_btn{
+    background-color:deepskyblue;
+    margin: 1rem;
+    width: 15rem;
+    height: 3rem;
+    border: solid 2px black;
+    border-radius: 0.5rem;
+    font-size: larger;
+}
+.main_menu_btn:hover{
+    background-color:dodgerblue;
+}
