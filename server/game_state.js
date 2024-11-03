@@ -1,3 +1,9 @@
+// handle game logic server-side
+// - define board presets
+// - define piece presets
+// - allow/ disallow moves
+// - test win/loss condtions
+
 const tile_objectives = [
     [0,0],[0,10],
     [10,0],[10,10]
@@ -23,14 +29,16 @@ const king_start = [10,9]
 const home = [5,5]
 
 const EMPTY_SPACE = " "
-const MIN_SPACE = 1
-const MAX_SPACE = 11
+const MIN_SPACE = 0
+const MAX_SPACE = 10
 
 let game_state
 let pieces_state
 let king_coor
 let defenders_pieces
 let attackers_pieces
+
+let player_turn = "defender"
 
 function new_board(){
     game_state = Array.from({ length: 11 }, () => Array(11).fill(' '))
@@ -59,31 +67,27 @@ function new_pieces(){
 
 function check_win(){
     tile_objectives.forEach(coor =>{
-        if(coor[0] === king[0] && coor[1] === king[1]){return 'defenders'}
+        if(coor[0] === king_coor[0] && coor[1] === king_coor[1]){return 'defenders'}
     })
-    if(state.defenders_pieces === 0){return 'attackers'}
-    if(state.attackers_pieces === 0){return 'defenders'}
+    if(defenders_pieces === 0){return 'attackers'}
+    if(attackers_pieces === 0){return 'defenders'}
     return ''
 }
 function move_piece(start, end){
-    if(!validate_move_direction(start, end)){
+    if(!(start[0] === end[0] || start[1] === end[1])){
         return "invalid move direction"
     }
-    if(!valid_move_clear_spaces(start, end)){
+    if(!validate_move_clear_spaces(start, end)){
         return "invalid move, there is something in the way"
     }
     let piece = pieces_state[start[0]][start[1]]
-    pieces[end[0]][end[1]] = piece
+    pieces_state[end[0]][end[1]] = piece
     pieces_state[start[0]][start[1]] = EMPTY_SPACE
 
     check_captures(end, piece)
     return ''
 }
-
-function validate_move_direction(start, end){
-    return start[0] == end[0] || start[1] == end[1]
-}
-function valid_move_clear_spaces(start, end){
+function validate_move_clear_spaces(start, end){
     let max,min,con,dir
     if(start[0] === end[0]){
         max = Math.max(start[1], end[1])
@@ -98,8 +102,13 @@ function valid_move_clear_spaces(start, end){
     }
     for(let i=min; i<=max; i++){
         let inspect_space = pieces_state[dir?con:i][dir?i:con]
-        if(inspect_space !== EMPTY_SPACE && (  dir?con:i!==start[0] || dir?i:con!== start[1]  ))
+        // console.log(`inspect_space: ${inspect_space}`)
+        // console.log(`dir: ${dir}, i: ${i}, con: ${con}`)
+        // console.log(`start: ${start}`)
+        if(inspect_space !== EMPTY_SPACE && (  (dir?start[1]:start[0]) !== i  )){
+            console.log(`Validate clear spaces has failed...`)
             return false
+        }
     }
     return true
 }
@@ -130,6 +139,8 @@ function check_tile(space_coor){
     if(space_coor[1] <= MIN_SPACE || space_coor[1] > MAX_SPACE)
         return null
 
+    // console.log(`space_coor: ${space_coor}`)
+    // debug_print_state(pieces_state)
     let space = pieces_state[space_coor[0]][space_coor[1]]
     if(space === EMPTY_SPACE)
         return null
@@ -153,8 +164,67 @@ function kill_piece(piece_coor){
     pieces_state[piece_coor[0]][piece_coor[1]] = EMPTY_SPACE
 }
 
+function server_move(start, end, player_side){
+    console.log(`server move player_side: ${player_side}`)
+    if(!check_turn(player_side)){
+        let response = {
+            "player_message": `It is the ${player_side}'s turn. `,
+            "pieces_state": pieces_state,
+            "opponent_message": ""
+        }
+        return response
+    }
+    let move_res = move_piece(start, end)
+    if(move_res !== ''){
+        let response = {
+            "player_message": move_res,
+            "pieces_state": pieces_state,
+            "opponent_message": ""
+        }
+        return response
+    }
+    let winner = check_win()
+    if(winner != ''){
+        let response = {
+            "player_message": `${winner} won!`,
+            "pieces_state": pieces_state,
+            "opponent_message": `${winner} won!`
+        }
+        return response
+    }
+
+    let response = {
+        "player_message": `${winner} won!`,
+        "pieces_state": pieces_state,
+        "opponent_message": `${winner} won!`
+    }
+    return response
+}
+
+function check_turn(player_side){
+    if(player_turn !== player_side){
+        return false
+    } else if(player_side == 'attacker'){
+        player_turn = 'defender'
+        return true
+    } else {
+        player_turn = 'attacker'
+        return true
+    }
+}
+
+function debug_print_state(state){
+    state.forEach((row) =>{
+    row.forEach((element) =>{
+        process.stdout.write(element)
+    })
+    process.stdout.write('\n')
+    })
+}
+
 module.exports = {
     new_board, 
     new_pieces,
-    move_piece
+    move_piece,
+    server_move
 }

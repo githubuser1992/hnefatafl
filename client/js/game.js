@@ -1,20 +1,29 @@
-import { create_board, populate_board } from './ui.js';
+// handle game logic client-side
 
-fetch('/new_game', {
-    method: 'GET'
-})
-.then(response => {
-    if(!response.ok){
-        throw new Error('Network response was not ok. ');
-    }
-    return response.json();
-})
-.then(data => {
-    create_board(data.board_state)
-    populate_board(data.pieces_state)
+import { update_board, update_pieces } from './ui.js';
+
+const socket = io()
+
+
+// tell the server that a player has tried to move a piece
+// move comes from a board listener in UI
+function move(move_data){
+    socket.emit('move', move_data)
+}
+function new_game(){
+    socket.emit('new_game')
+}
+
+// server is asserting piece locations
+socket.on('update_pieces', (pieces_arr) => {
+    update_pieces(pieces_arr)
 })
 
-console.log('end of script. ')
+// server is asserting board state
+socket.on('update_board', (board_arr) => {
+    update_board(board_arr)
+})
+
 
 
 

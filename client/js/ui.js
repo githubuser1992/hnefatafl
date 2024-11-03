@@ -1,4 +1,16 @@
+// ui.js
+// contains all the machinery to create and populate the client ui based 
+// on server information. 
+// - making the board based on server board state
+// - making the pieces based on server piece state
+// - make pieces interactable on client's side
+// - display messages from server
+
+const game = require('./game.js')
+
 let game_board = document.getElementById('gameboard')
+let player_msg = document.getElementById('player_message_box')
+let opponent_msg = document.getElementById('opponent_message_box')
 
 let being_dragged
 let player_side
@@ -9,6 +21,7 @@ game_board.addEventListener('dragover', event => {
 })
 game_board.addEventListener('drop', event => {
     event.preventDefault()
+    player_msg.textContent = ''
 
     // only drop pieces on tiles
     if(!event.target.matches('.tile')){return}
@@ -16,17 +29,18 @@ game_board.addEventListener('drop', event => {
     // get coors of start and end
     let start_coor = being_dragged.parentElement.id.match(/\d+/g).map(Number)
     let end_coor = event.target.id.match(/\d+/g).map(Number)
+    let player_side = being_dragged.matches(".attacker")? "attacker": "defender"
+    console.log(`DEBUG: being dragged side: ${player_side}`)
 
-    let move_result = state.move_piece(start_coor, end_coor) 
-    if(move_result === ''){
-        event.target.appendChild(being_dragged)
-        state.check_win()
-    } else {
-        display_message(move_result)
+    let data = {
+        piece_start : start_coor,
+        piece_end   : end_coor,
+        player_side : player_side
     }
+    game.move(data);
 })
 
-export function create_board(board_arr){
+export function update_board(board_arr){
     // reset gameboard with no pieces
     game_board.innerHTML = ""
     for(let j = 0; j <= 10; j++){
@@ -46,9 +60,11 @@ export function create_board(board_arr){
     }
 }
 
-export function populate_board(piece_arr){
-    piece_arr.forEach((row, j) => {
-        row.forEach((square, i) => {
+export function update_pieces(piece_arr){
+    piece_arr.forEach((column, i) => {
+        column.forEach((square, j) => {
+            let tile = document.getElementById(`tile_${i}_${j}`)
+            tile.innerHTML = ""
             if(square === ' '){return}
 
             let piece = document.createElement('div')
@@ -62,7 +78,6 @@ export function populate_board(piece_arr){
                 being_dragged = null
             })
 
-            let tile = document.getElementById(`tile_${i}_${j}`)
             tile.appendChild(piece)
         })
     })
@@ -70,13 +85,10 @@ export function populate_board(piece_arr){
 }
 
 function declare_winner(winner){
-    let player_msg = document.getElementById('player_message_box')
-    let opponent_msg = document.getElementById('opponent_message_box')
-
     const win_msg = 'You are the winner!!'
     const loss_msg = 'You lost.'
 
-    player_msg.textContent =   winner === player_side? win_msg:loss_msg
+    player_msg.textContent =   winner === player_side? win_msg:loss_msg //TODO: remove these on new game
     player_msg.classList.add(  winner === player_side? 'winner':'loser')
     opponent_msg.textContent = winner !== player_side? win_msg:loss_msg
     opponent_msg.classList.add(winner !== player_side? 'winner':'loser')
