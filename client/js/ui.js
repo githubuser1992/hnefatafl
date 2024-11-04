@@ -6,7 +6,9 @@
 // - make pieces interactable on client's side
 // - display messages from server
 
-const game = require('./game.js')
+import {move} from './logic.js'
+
+console.log('connected to script... ')
 
 let game_board = document.getElementById('gameboard')
 let player_msg = document.getElementById('player_message_box')
@@ -37,7 +39,7 @@ game_board.addEventListener('drop', event => {
         piece_end   : end_coor,
         player_side : player_side
     }
-    game.move(data);
+    move(data);
 })
 
 export function update_board(board_arr){

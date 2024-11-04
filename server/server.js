@@ -1,7 +1,7 @@
 const express = require('express')
 const path = require('path')
 const http = require('http')
-const io = require('socket.io')
+const socketIo = require('socket.io')
 
 const state = require('./game_state.js')
 
@@ -10,17 +10,25 @@ const state = require('./game_state.js')
 // 3. broadcast events (like moves)
 
 // change server functions to socket functions
+// make game state dictionary to story many game states
+// make a game state object to put in dictionary, includes pieces_arr, board_arr, and player_side
+
 
 const app = express()
 const server = http.createServer(app)
 const io = socketIo(server)
-const PORT = process.env.PORT || 3000
+
+const gameStates = new Map()
 
 // middleware 
 app.use(express.json()) // for JSON bodies
 app.use(express.urlencoded({ extended: true })) // url encoded bodies
+app.get('/socket.io-client', (req, res) => { 
+    res.sendFile('C:/Users/ndafo/Desktop/Hobbies/WebDevelopment/Hnefatafl/node_modules/socket.io/client-dist/socket.io.js'); 
+});
 app.use(express.static(path.join(__dirname, '../client'))) // serve static files
 
+const PORT = process.env.PORT || 3000
 // start the server listening on a port
 app.listen(PORT, () => {
     console.log(`Server listening on port ${PORT}`)
@@ -36,14 +44,17 @@ io.on('connection', (socket) => {
     console.log('DEBUG: A user connected')
 
     socket.on('new_game', () => {
-        socket.emit('update_board', state.new_board())
-        socket.emit('update_pieces', state.new_pieces())
+        const game_id = state.new_game(); // TODO in progress
+
+        socket.emit('game_id', game_id)
+        socket.emit('update_board', state.game_states[game_id])
+        socket.emit('update_pieces', state.game_states[game_id])
     })
 
     socket.on('move', (data) => {  // not doing req/ res anymore, just data in
         const {piece_start, piece_end, player_side} = data
-        let res = state.server_move(piece_start, piece_end, player_side)
-        socket.emit('update_pieces', res)
+        let res_data = state.server_move(piece_start, piece_end, player_side)
+        socket.emit('update_pieces', res_data)
     })
 
     socket.on('disconnect', () => {

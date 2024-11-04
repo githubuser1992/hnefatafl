@@ -1,13 +1,19 @@
 // handle game logic client-side
 
 import { update_board, update_pieces } from './ui.js';
+import { io } from '/socket.io-client';
 
-const socket = io()
+console.log('connected to script...')
+
+const socket = io('http.//localhost:3000')
+socket.on('connect', () =>{
+    console.log('connected with id: ' + socket.id)
+})
 
 
 // tell the server that a player has tried to move a piece
 // move comes from a board listener in UI
-function move(move_data){
+export function move(move_data){
     socket.emit('move', move_data)
 }
 function new_game(){
