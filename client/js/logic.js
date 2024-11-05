@@ -1,11 +1,16 @@
 // handle game logic client-side
 
 import { update_board, update_pieces } from './ui.js';
-import { io } from '/socket.io-client';
+// import { io } from 'https://cdn.socket.io/4.8.0/socket.io.esm.min.js';
+// import { io } from "socket.io-client";
 
 console.log('connected to script...')
 
-const socket = io('http.//localhost:3000')
+const socket = io('http://localhost:3000/socket.io-client')
+socket.emit('test', 'testing, testing, 1, 2, 3')
+console.log('DEBUG: io ran...')
+
+
 socket.on('connect', () =>{
     console.log('connected with id: ' + socket.id)
 })

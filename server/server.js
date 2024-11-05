@@ -23,9 +23,6 @@ const gameStates = new Map()
 // middleware 
 app.use(express.json()) // for JSON bodies
 app.use(express.urlencoded({ extended: true })) // url encoded bodies
-app.get('/socket.io-client', (req, res) => { 
-    res.sendFile('C:/Users/ndafo/Desktop/Hobbies/WebDevelopment/Hnefatafl/node_modules/socket.io/client-dist/socket.io.js'); 
-});
 app.use(express.static(path.join(__dirname, '../client'))) // serve static files
 
 const PORT = process.env.PORT || 3000
@@ -39,8 +36,13 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, '../client/index.html'))
 })
 
+app.get('/socket.io-client', (req, res) => { // DEBUG
+    res.sendFile('C:/Users/ndafo/Desktop/Hobbies/WebDevelopment/Hnefatafl/node_modules/socket.io/client-dist/socket.io.js'); 
+});
+
+
 // creates a socket object on user connection
-io.on('connection', (socket) => {
+io.on('connection', socket => {
     console.log('DEBUG: A user connected')
 
     socket.on('new_game', () => {
@@ -55,6 +57,10 @@ io.on('connection', (socket) => {
         const {piece_start, piece_end, player_side} = data
         let res_data = state.server_move(piece_start, piece_end, player_side)
         socket.emit('update_pieces', res_data)
+    })
+
+    socket.on('test', (msg) =>{
+        console.log('message' + msg)
     })
 
     socket.on('disconnect', () => {
