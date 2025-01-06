@@ -41,17 +41,21 @@ const GOAL_SQUARE = 'G'
 
 const game_states = new Map();
 
-function new_game(){
-    const game_id = generate_unique_id()
-    const board_arr = state.new_board()
-    const pieces_arr = state.new_pieces()
-    const player_side = 'defenders'
-    const game_state = {'board_arr':board_arr, 'pieces_arr':pieces_arr, 'player_side':player_side}
+function new_game(game_id){
+    if(game_id == null){
+        game_id = 5
+    }
+    const board_arr = new_board()
+    const pieces_arr = new_pieces()
+    const game_state = {
+        'board_arr':   board_arr, 
+        'pieces_arr':  pieces_arr, 
+        'player_turn': 'defender'
+    }
 
     game_states.set(game_id, game_state)
     return game_id 
 }
-
 function new_board(){
     let board_state = Array.from({ length: 11 }, () => Array(11).fill(' '))
     tile_objectives.forEach(coor => {
@@ -60,7 +64,6 @@ function new_board(){
     board_state[home[0]][home[1]] = HOME_SQUARE
     return board_state
 }
- 
 function new_pieces(){
     let pieces_state = Array.from({ length: 11 }, () => Array(11).fill(' '))
     defender_start.forEach(coor => {
@@ -73,15 +76,24 @@ function new_pieces(){
     return pieces_state
 }
 
+function get_board(game_id){
+    return game_states.get(game_id).board_arr
+}
+function get_pieces(game_id){
+    return game_states.get(game_id).pieces_arr
+}
+function get_state(game_id){
+    return game_states.get(game_id)
+}
+
 function check_win(pieces_arr, board_arr){
     // Check piece array for piece counts and king location
     let king_coor = null; 
     let att_count = 0; 
     pieces_arr.forEach((row, i) => {
-        array.forEach((c,j) =>{
+        row.forEach((c,j) =>{
             if(c == KING_TOKEN) {
-                king_coor[0] = i
-                king_coor[1] = j
+                king_coor = [i, j]
             } else if(c == ATT_TOKEN) {
                 att_count++
             }
@@ -89,13 +101,13 @@ function check_win(pieces_arr, board_arr){
     })
 
     if(king_coor === null){         // king is dead
-        return 'attackers'
+        return 'attacker'
     }
-    if(att_count === 0){            // all attackers are dead
-        return 'defenders'
+    if(att_count === 0){            // all attacker are dead
+        return 'defender'
     }
     if(board_arr[king_coor[0]][king_coor[1]] === GOAL_SQUARE){
-        return 'defenders'          // king is on goal square
+        return 'defender'          // king is on goal square
     }
 }
 
@@ -114,7 +126,6 @@ function move_piece(pieces_arr, start, end){
     pieces_arr[end[0]][end[1]] = piece
     pieces_arr[start[0]][start[1]] = EMPTY_SPACE
 
-    check_captures(pieces_arr, end, piece)
     return ''
 }
 
@@ -163,86 +174,81 @@ function check_captures(pieces_arr, check_coor, piece){
     check_capture(pieces_arr, check_coor, piece, i=0, j=1)
     check_capture(pieces_arr, check_coor, piece, i=0, j=-1)
 }
-function check_tile(space_coor){
-    // returns null if no children or out of bounds, 
-    // returns piece for game pieces ('a' or 'd')
-    
-    if(space_coor[0] <= MIN_SPACE || space_coor[0] > MAX_SPACE)
+function check_tile(pieces_arr, space_coor){
+    if(space_coor[0] < MIN_SPACE || space_coor[0] > MAX_SPACE)
         return null
-    if(space_coor[1] <= MIN_SPACE || space_coor[1] > MAX_SPACE)
+    if(space_coor[1] < MIN_SPACE || space_coor[1] > MAX_SPACE)
         return null
 
-    // console.log(`space_coor: ${space_coor}`)
-    // debug_print_state(pieces_state)
-    let space = pieces_state[space_coor[0]][space_coor[1]]
+    let space = pieces_arr[space_coor[0]][space_coor[1]]
     if(space === EMPTY_SPACE)
         return null
 
-    if(space === 'd' || space === 'a')
+    if(space === DEF_TOKEN || space === ATT_TOKEN)
         return space
 
-    // base case for any features later (powerup, obstacles, etc.)
-    return null
+    return null // just in case something gets added later
 }
 function kill_piece(pieces_arr, piece_coor){
     pieces_arr[piece_coor[0]][piece_coor[1]] = EMPTY_SPACE
 }
 
-// TODO I should be able to put pieces arr, boar arr, and player side into a game state object. 
-// cleaner that way
-function server_move(pieces_arr, board_arr, start, end, player_side){
-    console.log(`server move player_side: ${player_side}`)
-    let piece = pieces_arr[start[0]][start[1]]
-    if((player_side == 'attackers' && piece != ATT_TOKEN) ||
-            (player_side == 'defenders' && (piece !== DEF_TOKEN && piece !== KING_TOKEN))
-        ){
+function server_move(game_id, start, end, player_side){
+    // TODO really bad infraction, too coupled/ no separation of concerns
+    // make it an object with succ/ fail and err msg
+    const state = game_states.get(game_id)
+
+    if(player_side !== state.player_turn){
         let response = {
-            "player_message": `It is the ${player_side}'s turn. `,
-            "pieces_state": pieces_state,
+            "player_message": `Not your turn`,
+            "pieces_arr": state.pieces_arr,
             "opponent_message": ""
         }
         return response
     }
 
-    let move_res = move_piece(pieces_arr, start, end)
-    if(move_res !== ''){
+    let piece = state.pieces_arr[start[0]][start[1]]
+    if((player_side == 'attacker' && piece != ATT_TOKEN) ||
+            (player_side == 'defender' && (piece !== DEF_TOKEN && piece !== KING_TOKEN))
+        ){
         let response = {
-            "player_message": move_res,
-            "pieces_arr": pieces_arr,
+            "player_message": `That is the ${player_side}'s piece. `,
+            "pieces_arr": state.pieces_arr,
             "opponent_message": ""
         }
         return response
     }
-    let winner = check_win(pieces_arr, board_arr)
+
+    let move_res = move_piece(state.pieces_arr, start, end)
+    if(move_res == ''){
+        check_captures(state.pieces_arr, end, piece)
+        const old_state = game_states.get(game_id)
+        let new_state = old_state
+        new_state.player_turn = new_state.player_turn == "defender" ? "attacker" : 'defender'
+        game_states.set(game_id, new_state)
+    }
+    let response = {
+        "player_message": move_res,
+        "pieces_arr": state.pieces_arr,
+        "opponent_message": ""
+    } 
+
+    let winner = check_win(state.pieces_arr, state.board_arr)
     if(winner != ''){
         let response = {
             "player_message": `${winner} won!`,
-            "pieces_arr": pieces_arr,
+            "pieces_arr": state.pieces_arr,
             "opponent_message": `${winner} won!`
         }
-        return response
-    }
-
-    let response = {
-        "player_message": `${winner} won!`,
-        "pieces_arr": pieces_arr,
-        "opponent_message": `${winner} won!`
     }
     return response
 }
 
-// function debug_print_state(state){
-//     state.forEach((row) =>{
-//     row.forEach((element) =>{
-//         process.stdout.write(element)
-//     })
-//     process.stdout.write('\n')
-//     })
-// }
-
 module.exports = {
-    new_board, 
-    new_pieces,
+    new_game,
+    get_board,
+    get_pieces,
+    get_state,
     move_piece,
     server_move
 }

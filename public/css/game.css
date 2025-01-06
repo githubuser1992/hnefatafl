@@ -54,7 +54,7 @@ html, body{
     justify-content: center;
     align-items: center;
 }
-.tile_objective{
+.tile_goal{
     background-color: lightcoral;
 }
 .tile_home{
@@ -78,6 +78,6 @@ html, body{
 .attacker{
     background-color:bisque;
 }
-#king{
+.king{
     background-color: darkred;
 }
